@@ -3,7 +3,6 @@ import doctest
 
 INPUT_FILE = "input.csv"
 OUTPUT_FILE = "output.csv"
-NUM_OF_GENERATIONS = 50
 COLOR = (0, 255, 0)
 
 def load_grid(filename):        # Загрузка начальных данных из input.csv
@@ -132,7 +131,7 @@ def write_output_csv(file, grid, generation): # Запись поколения 
             + "\n")
     file.write("\n")
 
-def simulate():                     # Запуск игры Жизнь
+def simulate(num_of_generations):   # Запуск игры Жизнь
     grid = load_grid(INPUT_FILE)
     age_grid = [                    # Создание возраста
         [
@@ -145,7 +144,7 @@ def simulate():                     # Запуск игры Жизнь
         OUTPUT_FILE,
         "w"                         # Запись файла
     ) as file:
-        for generation in range(NUM_OF_GENERATIONS + 1): # Цикл поколений до 50
+        for generation in range(num_of_generations + 1): # Цикл поколений до 50
             write_output_csv(
                 file,
                 grid,
@@ -160,4 +159,5 @@ def simulate():                     # Запуск игры Жизнь
 
 if __name__ == "__main__":
     doctest.testmod()
-    simulate()
+    num_of_generations = int(input("Введите количество шагов моделирования: "))
+    simulate(num_of_generations)
