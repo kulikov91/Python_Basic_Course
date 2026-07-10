@@ -38,7 +38,12 @@ def show_markets(markets, page=1, size=10):
     print("-" * 70)
 
     for m in page_data:
-        print(f"{m['FMID']:<10} {m['MarketName'][:33]:<35} {m['city']:<15} {m['State']:<5}")
+        print(
+            f"{m['FMID']:<10} "
+            f"{m['MarketName'][:33]:<35} "
+            f"{m['city']:<15} "
+            f"{m['State']:<5}"
+        )
 
     print("-" * 70)
     print(f"Страница {page}/{total_pages} | Всего рынков: {total}")
@@ -93,7 +98,7 @@ def search_by_zip(markets, zip_code):
 
 def get_coordinates_by_zip(markets, zip_code):
     """
-    Возвращает координаты первого рынка с указанным ZIP-кодом.
+    Возвращает координаты первого рынка с указанным ZIP-кодом
 
     >>> markets = load_data("Export.csv")
 
@@ -215,33 +220,50 @@ def show_market_details(market):
 
 def load_reviews(filename):
     """
-    Загрузка отзывов
+    Загружает отзывы из CSV-файла.
+    Возвращает список словарей.
     """
-    pass
+    reviews = []
+
+    try:
+        with open(filename, encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                reviews.append(row)
+
+    except FileNotFoundError:
+        reviews = []
+    return reviews
 
 def add_review(reviews, market_id, name, text, rating):
     """
-    Добавление отзыва
+    Добавление отзыва.
     """
-    pass
+    review = {"FMID": market_id,"Name": name,"Review": text,"Rating": str(rating)}
+    reviews.append(review)
 
 def save_reviews(filename, reviews):
     """
-    Сохранение отзывов
+    Сохранение отзывов в CSV-файл
     """
-    pass
+    with open(filename, "w", newline="", encoding="utf-8") as file:
+        fields = ["FMID","Name","Review","Rating"]
+        writer = csv.DictWriter(file,fieldnames=fields)
+        writer.writeheader()
+
+        for review in reviews:
+            writer.writerow(review)
 
 def get_market_reviews(reviews, market_id):
     """
-    Получение отзывов рынка
+    Получение отзывов для выбранного рынка.
     """
-    pass
+    result = []
 
-def delete_market(markets, market_id):
-    """
-    Удаление рынка
-    """
-    pass
+    for review in reviews:
+        if review["FMID"] == market_id:
+            result.append(review)
+    return result
 
 def get_market_by_id(markets, fmid):
     """
@@ -272,6 +294,234 @@ def get_market_by_id(markets, fmid):
         return markets_found[0]
     return None
 
+def process_show(markets):
+    """
+    Показывает список фермерских рынков
+    с разбивкой по страницам
+    """
+    try:
+        page = int(input("Введите номер страницы: "))
+    except ValueError:
+        print("Введите номер страницы цифрами!")
+        return
+
+    while True:
+        show_markets(markets, page)
+        action = input(
+            "\n[n] Следующая  [p] Предыдущая  "
+            "[номер] Перейти на страницу  [q] Выход ==> ").lower()
+
+        total_pages = (len(markets) + 9) // 10
+
+        if action == "n":
+            if page < total_pages:
+                page += 1
+            else:
+                print("Это последняя страница.")
+
+        elif action == "p":
+            if page > 1:
+                page -= 1
+            else:
+                print("Это первая страница.")
+
+        elif action.isdigit():
+            new_page = int(action)
+
+            if 1 <= new_page <= total_pages:
+                page = new_page
+            else:
+                print("Такой страницы нет!")
+
+        elif action == "q":
+            break
+        else:
+            print("Неизвестная команда.")
+
+def process_search(markets):
+    """
+    Находит фермерский рынок
+    по городу и штату
+    """
+    city = input("Введите город: ")
+    state = input("Введите штат: ")
+    result = search_by_city_state(markets, city, state)
+
+    if len(result) == 0:
+        print("Рынки не найдены!")
+
+    else:
+        print("Найдено рынков:", len(result))
+
+        for market in result:
+            print(market["FMID"], "-", market["MarketName"])
+
+        process_details(markets)
+
+def process_zip(markets):
+    """
+    Находит фермерский рынок
+    по индексу
+    """
+    zip_code = input("Введите ZIP-код: ")
+    result = search_by_zip(markets, zip_code)
+
+    if len(result) == 0:
+        print("Рынки не найдены!")
+
+    else:
+        print("Найдено рынков:", len(result))
+
+        for market in result:
+            print(market["FMID"],
+                  "-",
+                  market["MarketName"])
+
+        process_details(markets)
+
+def process_details(markets):
+    """
+    Показывает подробную информацию о рынке по введенному FMID.
+    """
+    fmid = input(
+        "\nВведите ID рынка для просмотра деталей "
+        "(или Enter для выхода): ")
+
+    if fmid == "":
+        return
+
+    market = get_market_by_id(markets,fmid)
+
+    if market:
+        show_market_details(market)
+    else:
+        print("Рынок с таким FMID не найден!")
+
+def process_distance(markets):
+    """
+    Поиск рынков в заданном радиусе
+    """
+    zip_code = input("Введите ZIP-код: ")
+
+    try:
+        radius = float(input("Введите радиус (в милях): "))
+
+    except ValueError:
+        print("Введите радиус числом!")
+        return
+
+    result = search_by_distance(markets, zip_code, radius)
+
+    if len(result) == 0:
+        print("Рынки не найдены!")
+
+    else:
+        print("Найдено рынков:", len(result))
+
+        for market, distance in result:
+            print(
+                market["FMID"],
+                "-",
+                market["MarketName"],
+                "-",
+                market["city"],
+                "-",
+                market["State"])
+
+            print(f"Расстояние: {distance:.2f} миль.\n")
+
+        process_details(markets)
+
+def process_review(markets):
+    """
+    Добавляет отзыв о рынке
+    """
+    market_id = input("Введите FMID рынка (или Enter для выхода): ")
+    market = get_market_by_id(markets, market_id)
+
+    if market is None:
+        print("Рынок не найден!")
+        return
+
+    name = input("Введите имя и фамилию: ")
+
+    while True:
+        try:
+            rating = int(input("Оценка (1-5): "))
+            if 1 <= rating <= 5:
+                break
+
+            print("Оценка должна быть от 1 до 5.")
+
+        except ValueError:
+            print("Введите число!")
+
+    text = input("Введите отзыв (можно оставить пустым): ")
+    add_review(reviews, market_id, name, text, rating)
+    save_reviews("reviews.csv", reviews)
+    print("Отзыв успешно сохранён!")
+
+def process_reviews(markets):
+    """
+    Показывает отзывы о рынке
+    """
+    market_id = input("Введите FMID рынка: ")
+    market = get_market_by_id(markets, market_id)
+
+    if market is None:
+        print("Рынок не найден!")
+        return
+
+    market_reviews = get_market_reviews(reviews, market_id)
+
+    if len(market_reviews) == 0:
+        print("Для этого рынка пока нет отзывов :(")
+    else:
+        print("\nОтзывы о рынке:")
+        print("-" * 40)
+
+        for review in market_reviews:
+            print("Автор:", review["Name"])
+            print("Оценка:", review["Rating"], "/ 5")
+
+            if review["Review"] != "":
+                print("Отзыв:", review["Review"])
+
+            print("-" * 40)
+
+def process_sort(markets):
+    """
+    Производит сортировку рынков
+    по выбранному полю
+    """
+    print("\nВыберите поле для сортировки:")
+    print("1 - Название рынка")
+    print("2 - Город")
+    print("3 - Штат")
+
+    choice = input("Ваш выбор: ")
+    order = input("По возрастанию (a) или убыванию (d)? ").lower()
+    reverse = False
+
+    if order == "d":
+        reverse = True
+
+    if choice == "1":
+        sorted_markets = sort_markets(markets, "MarketName", reverse)
+
+    elif choice == "2":
+        sorted_markets = sort_markets(markets, "city", reverse)
+
+    elif choice == "3":
+        sorted_markets = sort_markets(markets, "State", reverse)
+
+    else:
+        print("Неверный выбор!")
+        return
+
+    page = int(input("Введите номер страницы: "))
+    show_markets(sorted_markets, page)
+
 def show_welcome():
     """
     Выводит приветственное сообщение и список доступных команд.
@@ -290,31 +540,37 @@ def show_welcome():
 
                = \033[31mSEARCH\033[0m =
         Находит фермерский рынок
-           по городу и штату
+            по городу и штату
            
-                = \033[31mZIP\033[0m =
+                 = \033[31mZIP\033[0m =
         Находит фермерский рынок
-              по индексу
+               по индексу
               
               = \033[31mDISTANCE\033[0m =
         Находит фермерский рынок
           в указанном радиусе
          от заданного ZIP-кода
 
-              = \033[31mDETAILS\033[0m =
-    Показывает подробную информацию
-           о выбранном рынке
+               = \033[31mDETAILS\033[0m =
+     Показывает подробную информацию
+            о выбранном рынке
            
-               = \033[31mSORT\033[0m =
-      Отсортировать список рынков
+               = \033[31mREVIEW\033[0m =
+         Оставить отзыв о рынке
+           
+                = \033[31mSORT\033[0m =
+       Отсортировать список рынков
       по названию, городу или штату
+      
+               = \033[31mREVIEWS\033[0m =
+        Просмотреть отзывы о рынке
 
-               = \033[31mEND\033[0m =
-      Завершает работу программы
+                = \033[31mEND\033[0m =
+        Завершает работу программы
 =========================================
 """)
 
-def main_loop(markets):
+def main_loop(markets, reviews):
     """
     Основной цикл работы программы.
     Обрабатывает команды, вводимые пользователем.
@@ -323,183 +579,37 @@ def main_loop(markets):
 
     while True:
         cmd = input(
-            "\033[31m\n\t\tВведите команду без кавычек:\n\033[0m"
-            "('show', 'search', 'zip', 'distance', 'sort', 'end', 'help') ==> ")
-
-        cmd = cmd.lower()
+            "\033[31m\nВВЕДИТЕ КОМАНДУ БЕЗ КАВЫЧЕК:\n\033[0m"
+            "('show', 'search', 'zip', 'distance','review', 'sort', 'reviews', 'end', 'help') ==> "
+        ).lower()
 
         if cmd == "end":
             print("Программа завершена!")
             break
 
         elif cmd == "show":
-            try:
-                page = int(input("Введите номер страницы: "))
-
-            except ValueError:
-                print("Введите номер страницы цифрами!")
-                continue
-
-            while True:
-                show_markets(markets, page)
-                action = input(
-                    "\n[n] Следующая  [p] Предыдущая  [номер] Перейти на страницу  [q] Выход ==> "
-                ).lower()
-
-                total_pages = (len(markets) + 9) // 10
-
-                if action == "n":
-                    if page < total_pages:
-                        page += 1
-                    else:
-                        print("Это последняя страница.")
-
-                elif action == "p":
-                    if page > 1:
-                        page -= 1
-
-                    else:
-                        print("Это первая страница.")
-
-                elif action.isdigit():
-                    new_page = int(action)
-                    if 1 <= new_page <= total_pages:
-                        page = new_page
-                    else:
-                        print("Такой страницы нет!")
-
-                elif action == "q":
-                    break
-
-                else:
-                    print("Неизвестная команда.")
+            process_show(markets)
 
         elif cmd == "search":
-            city = input("Введите город: ")
-            state = input("Введите штат: ")
-            result = search_by_city_state(markets,city,state)
-
-            if len(result) == 0:
-                print("Рынки не найдены!")
-
-            else:
-                print("Найдено рынков:", len(result))
-
-                for market in result:
-                    print(market["FMID"],"-",market["MarketName"])
-
-                fmid = input( "\nВведите ID рынка для просмотра деталей "
-                    "(или Enter для выхода): ")
-
-                if fmid != "":
-                    market = get_market_by_id(markets, fmid)
-
-                    if market:
-                        show_market_details(market)
-                    else:
-                        print("Рынок с таким FMID не найден!")
+            process_search(markets)
 
         elif cmd == "distance":
-            zip_code = input("Введите ZIP-код: ")
+            process_distance(markets)
 
-            try:
-                radius = float(input("Введите радиус (в милях): "))
+        elif cmd == "review":
+            process_review(markets)
 
-            except ValueError:
-                print("Введите радиус числом!")
-                continue
-
-            result = search_by_distance(markets,zip_code,radius)
-
-            if len(result) == 0:
-                print("Рынки не найдены!")
-
-            else:
-                print("Найдено рынков:",len(result))
-
-                for market, distance in result:
-                    print(
-                        market["FMID"],
-                        "-",
-                        market["MarketName"],
-                        "-",
-                        market["city"],
-                        "-",
-                        market["State"])
-
-                    print("Расстояние:", round(distance, 2),"миль.")
-                    print()
-
-                fmid = input("\nВведите ID рынка для просмотра деталей "
-                    "(или Enter для выхода): ")
-
-                if fmid != "":
-                    market = get_market_by_id(markets, fmid)
-
-                    if market:
-                        show_market_details(market)
-                    else:
-                        print("Рынок с таким FMID не найден!")
+        elif cmd == "reviews":
+            process_reviews(markets)
 
         elif cmd == "zip":
-            zip_code = input("Введите ZIP-код: ")
-            result = search_by_zip(markets,zip_code)
-
-            if len(result) == 0:
-                print("Рынки не найдены!")
-
-            else:
-                print("Найдено рынков:",len(result))
-
-                for market in result:
-                    print(market["FMID"],
-                        "-",
-                        market["MarketName"])
-
-                fmid = input(
-                    "\nВведите ID рынка для просмотра деталей "
-                    "(или Enter для выхода): ")
-
-                if fmid != "":
-                    market = get_market_by_id(
-                        markets,
-                        fmid)
-
-                    if market:
-                        show_market_details(market)
-                    else:
-                        print("Рынок с таким FMID не найден!")
+            process_zip(markets)
 
         elif cmd == "help":
             show_welcome()
 
         elif cmd == "sort":
-            print("\nВыберите поле для сортировки:")
-            print("1 - Название рынка")
-            print("2 - Город")
-            print("3 - Штат")
-
-            choice = input("Ваш выбор: ")
-            order = input("По возрастанию (a) или убыванию (d)? ").lower()
-            reverse = False
-
-            if order == "d":
-                reverse = True
-
-            if choice == "1":
-                sorted_markets = sort_markets(markets,"MarketName",reverse)
-
-            elif choice == "2":
-                sorted_markets = sort_markets(markets,"city",reverse)
-
-            elif choice == "3":
-                sorted_markets = sort_markets(markets,"State",reverse)
-
-            else:
-                print("Неверный выбор!")
-                continue
-            page = int(input("Введите номер страницы: "))
-            show_markets(sorted_markets, page)
+           process_sort(markets)
 
         else:
             print(
@@ -509,4 +619,5 @@ def main_loop(markets):
 if __name__ == "__main__":
     doctest.testmod()
     markets = load_data("Export.csv")
-    main_loop(markets)
+    reviews = load_reviews("reviews.csv")
+    main_loop(markets, reviews)
