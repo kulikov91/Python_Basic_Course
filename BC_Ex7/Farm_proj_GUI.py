@@ -61,6 +61,7 @@ STATE_CODES = {
     "District of Columbia": "DC"
 }
 
+
 def normalize_state(state):
     """
     Приводит название штата или его код к двухбуквенному коду.
@@ -539,6 +540,8 @@ class MarketManager:
         )
         print("=" * 82)
 
+
+
 class ReviewManager:
     """Управляет отзывами пользователей."""
 
@@ -685,16 +688,21 @@ class ReviewManager:
         self.reviews.remove(review_to_delete)
         return True
 
+
+
+
 import tkinter as tk
 from tkinter import ttk, messagebox
+
+
 
 class FarmMarketGUI:
     """
     Графическое приложение для работы с фермерскими рынками.
 
-    Класс отвечает только за пользовательский интерфейс.
-    Работа с рынками и отзывами выполняется через
-    MarketManager и ReviewManager.
+    Класс отвечает за оконный интерфейс.
+    Работа с рынками выполняется через MarketManager,
+    работа с отзывами — через ReviewManager.
     """
 
     PAGE_SIZE = 10
@@ -709,8 +717,8 @@ class FarmMarketGUI:
             review_manager — объект ReviewManager.
 
         Постусловия:
-            Создается графический интерфейс и отображается
-            первая страница списка рынков.
+            Создается графический интерфейс.
+            В таблице отображается первая страница всех рынков.
         """
         self.root = root
         self.market_manager = market_manager
@@ -721,20 +729,31 @@ class FarmMarketGUI:
         self.current_page = 1
 
         self.root.title("Фермерские рынки США")
-        self.root.geometry("1120x700")
-        self.root.minsize(900, 600)
+        self.root.geometry("1180x760")
+        self.root.minsize(960, 640)
 
         self.create_widgets()
         self.show_page(1)
+        self.set_status(
+            f"Загружено рынков: {len(self.market_manager.markets)}"
+        )
 
     def create_widgets(self):
         """Создает элементы главного окна."""
-        title = ttk.Label(
-            self.root,
+        title_frame = ttk.Frame(self.root)
+        title_frame.pack(fill="x", padx=12, pady=(12, 4))
+
+        ttk.Label(
+            title_frame,
             text="Фермерские рынки США",
             font=("Arial", 18, "bold")
-        )
-        title.pack(pady=(12, 8))
+        ).pack(side="left")
+
+        ttk.Label(
+            title_frame,
+            text="GUI • ООП • CSV",
+            font=("Arial", 10)
+        ).pack(side="right", pady=(8, 0))
 
         search_frame = ttk.LabelFrame(self.root, text="Поиск")
         search_frame.pack(fill="x", padx=12, pady=6)
@@ -787,6 +806,14 @@ class FarmMarketGUI:
             command=self.show_all
         ).grid(row=1, column=3, padx=5, pady=6)
 
+        ttk.Button(
+            search_frame,
+            text="Очистить поля",
+            command=self.clear_search_fields
+        ).grid(row=1, column=4, padx=5, pady=6)
+
+        search_frame.columnconfigure(8, weight=1)
+
         sort_frame = ttk.LabelFrame(self.root, text="Сортировка")
         sort_frame.pack(fill="x", padx=12, pady=6)
 
@@ -827,7 +854,10 @@ class FarmMarketGUI:
         table_frame = ttk.Frame(self.root)
         table_frame.pack(fill="both", expand=True, padx=12, pady=6)
 
-        columns = ("FMID", "Name", "City", "State", "Rating", "Distance")
+        columns = (
+            "FMID", "Name", "City", "State", "Rating", "Distance"
+        )
+
         self.tree = ttk.Treeview(
             table_frame,
             columns=columns,
@@ -842,22 +872,35 @@ class FarmMarketGUI:
         self.tree.heading("Rating", text="Рейтинг")
         self.tree.heading("Distance", text="Расстояние")
 
-        self.tree.column("FMID", width=90, anchor="center")
-        self.tree.column("Name", width=310)
-        self.tree.column("City", width=150)
-        self.tree.column("State", width=130)
-        self.tree.column("Rating", width=90, anchor="center")
-        self.tree.column("Distance", width=110, anchor="center")
+        self.tree.column("FMID", width=95, anchor="center", stretch=False)
+        self.tree.column("Name", width=350)
+        self.tree.column("City", width=160)
+        self.tree.column("State", width=140)
+        self.tree.column("Rating", width=90, anchor="center", stretch=False)
+        self.tree.column("Distance", width=115, anchor="center", stretch=False)
 
-        scrollbar = ttk.Scrollbar(
+        vertical_scrollbar = ttk.Scrollbar(
             table_frame,
             orient="vertical",
             command=self.tree.yview
         )
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        horizontal_scrollbar = ttk.Scrollbar(
+            table_frame,
+            orient="horizontal",
+            command=self.tree.xview
+        )
 
-        self.tree.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        self.tree.configure(
+            yscrollcommand=vertical_scrollbar.set,
+            xscrollcommand=horizontal_scrollbar.set
+        )
+
+        table_frame.rowconfigure(0, weight=1)
+        table_frame.columnconfigure(0, weight=1)
+
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vertical_scrollbar.grid(row=0, column=1, sticky="ns")
+        horizontal_scrollbar.grid(row=1, column=0, sticky="ew")
 
         self.tree.bind("<Double-1>", lambda event: self.show_details())
 
@@ -870,17 +913,27 @@ class FarmMarketGUI:
             command=self.previous_page
         ).pack(side="left")
 
-        self.page_label = ttk.Label(page_frame, text="")
-        self.page_label.pack(side="left", padx=12)
-
         ttk.Button(
             page_frame,
             text="Следующая",
             command=self.next_page
+        ).pack(side="left", padx=(6, 0))
+
+        self.page_label = ttk.Label(page_frame, text="")
+        self.page_label.pack(side="left", padx=14)
+
+        ttk.Label(page_frame, text="Страница:").pack(side="left")
+        self.page_entry = ttk.Entry(page_frame, width=6)
+        self.page_entry.pack(side="left", padx=4)
+
+        ttk.Button(
+            page_frame,
+            text="Перейти",
+            command=self.go_to_page
         ).pack(side="left")
 
         action_frame = ttk.LabelFrame(self.root, text="Действия")
-        action_frame.pack(fill="x", padx=12, pady=(6, 12))
+        action_frame.pack(fill="x", padx=12, pady=(6, 6))
 
         buttons = [
             ("Подробности", self.show_details),
@@ -890,12 +943,32 @@ class FarmMarketGUI:
             ("Удалить рынок", self.delete_market)
         ]
 
-        for text, command in buttons:
+        for button_text, command in buttons:
             ttk.Button(
                 action_frame,
-                text=text,
+                text=button_text,
                 command=command
             ).pack(side="left", padx=5, pady=8)
+
+        self.status_label = ttk.Label(
+            self.root,
+            text="",
+            anchor="w",
+            relief="sunken"
+        )
+        self.status_label.pack(fill="x", side="bottom")
+
+    def set_status(self, text):
+        """Выводит сообщение в строке состояния."""
+        self.status_label.config(text=" " + text)
+
+    def clear_search_fields(self):
+        """Очищает поля поиска."""
+        self.city_entry.delete(0, "end")
+        self.state_entry.delete(0, "end")
+        self.zip_entry.delete(0, "end")
+        self.radius_entry.delete(0, "end")
+        self.set_status("Поля поиска очищены")
 
     def get_selected_market(self):
         """
@@ -921,9 +994,7 @@ class FarmMarketGUI:
         return self.market_manager.get_market_by_id(str(values[0]))
 
     def show_page(self, page):
-        """
-        Отображает указанную страницу текущего списка рынков.
-        """
+        """Отображает указанную страницу текущего списка рынков."""
         total = len(self.current_markets)
 
         for item in self.tree.get_children():
@@ -932,6 +1003,8 @@ class FarmMarketGUI:
         if total == 0:
             self.current_page = 1
             self.page_label.config(text="Рынки не найдены")
+            self.page_entry.delete(0, "end")
+            self.page_entry.insert(0, "1")
             return
 
         total_pages = (total + self.PAGE_SIZE - 1) // self.PAGE_SIZE
@@ -945,11 +1018,7 @@ class FarmMarketGUI:
             rating = self.review_manager.calculate_average_rating(
                 market.fmid
             )
-
-            if rating == 0:
-                rating_text = "-"
-            else:
-                rating_text = f"{rating:.1f}/5"
+            rating_text = "-" if rating == 0 else f"{rating:.1f}/5"
 
             if market.fmid in self.current_distances:
                 distance_text = (
@@ -979,6 +1048,9 @@ class FarmMarketGUI:
             )
         )
 
+        self.page_entry.delete(0, "end")
+        self.page_entry.insert(0, str(page))
+
     def previous_page(self):
         """Показывает предыдущую страницу."""
         if self.current_page > 1:
@@ -993,11 +1065,41 @@ class FarmMarketGUI:
         if self.current_page < total_pages:
             self.show_page(self.current_page + 1)
 
+    def go_to_page(self):
+        """Переходит к введенному номеру страницы."""
+        if len(self.current_markets) == 0:
+            return
+
+        total_pages = (
+            len(self.current_markets) + self.PAGE_SIZE - 1
+        ) // self.PAGE_SIZE
+
+        try:
+            page = int(self.page_entry.get())
+        except ValueError:
+            messagebox.showerror(
+                "Страница",
+                "Введите номер страницы цифрами!"
+            )
+            return
+
+        if page < 1 or page > total_pages:
+            messagebox.showerror(
+                "Страница",
+                "Такой страницы нет!"
+            )
+            return
+
+        self.show_page(page)
+
     def show_all(self):
-        """Сбрасывает поиск и показывает все рынки."""
+        """Сбрасывает результаты поиска и показывает все рынки."""
         self.current_markets = list(self.market_manager.markets)
         self.current_distances = {}
         self.show_page(1)
+        self.set_status(
+            f"Показаны все рынки: {len(self.current_markets)}"
+        )
 
     def search_city_state(self):
         """Ищет рынки по городу и штату."""
@@ -1017,6 +1119,10 @@ class FarmMarketGUI:
         )
         self.current_distances = {}
         self.show_page(1)
+
+        self.set_status(
+            f"Поиск {city}, {state}: найдено {len(self.current_markets)}"
+        )
 
         if len(self.current_markets) == 0:
             messagebox.showinfo(
@@ -1041,6 +1147,10 @@ class FarmMarketGUI:
         self.current_distances = {}
         self.show_page(1)
 
+        self.set_status(
+            f"Поиск ZIP {zip_code}: найдено {len(self.current_markets)}"
+        )
+
         if len(self.current_markets) == 0:
             messagebox.showinfo(
                 "Результат поиска",
@@ -1050,6 +1160,13 @@ class FarmMarketGUI:
     def search_distance(self):
         """Ищет рынки в заданном радиусе от ZIP-кода."""
         zip_code = self.zip_entry.get().strip()
+
+        if zip_code == "":
+            messagebox.showwarning(
+                "ZIP-код",
+                "Введите ZIP-код."
+            )
+            return
 
         if self.market_manager.get_user_zip_coordinates(zip_code) is None:
             messagebox.showerror(
@@ -1079,13 +1196,16 @@ class FarmMarketGUI:
             radius
         )
 
-        self.current_markets = [item[0] for item in result]
+        self.current_markets = [market for market, distance in result]
         self.current_distances = {
             market.fmid: distance
             for market, distance in result
         }
 
         self.show_page(1)
+        self.set_status(
+            f"ZIP {zip_code}, радиус {radius:g} миль: найдено {len(result)}"
+        )
 
         if len(result) == 0:
             messagebox.showinfo(
@@ -1095,6 +1215,13 @@ class FarmMarketGUI:
 
     def sort_markets(self):
         """Сортирует текущий список рынков по выбранному критерию."""
+        if len(self.current_markets) == 0:
+            messagebox.showinfo(
+                "Сортировка",
+                "Нет рынков для сортировки."
+            )
+            return
+
         criterion = self.sort_combo.get()
         reverse = self.order_combo.get() == "По убыванию"
 
@@ -1104,6 +1231,7 @@ class FarmMarketGUI:
                 key=lambda market: market.name.lower(),
                 reverse=reverse
             )
+            self.current_distances = {}
 
         elif criterion == "Город":
             self.current_markets = sorted(
@@ -1111,6 +1239,7 @@ class FarmMarketGUI:
                 key=lambda market: market.city.lower(),
                 reverse=reverse
             )
+            self.current_distances = {}
 
         elif criterion == "Штат":
             self.current_markets = sorted(
@@ -1118,6 +1247,7 @@ class FarmMarketGUI:
                 key=lambda market: market.state.lower(),
                 reverse=reverse
             )
+            self.current_distances = {}
 
         elif criterion == "Средний рейтинг":
             self.current_markets = sorted(
@@ -1128,6 +1258,7 @@ class FarmMarketGUI:
                     ),
                 reverse=reverse
             )
+            self.current_distances = {}
 
         elif criterion == "Расстояние от ZIP-кода":
             zip_code = self.zip_entry.get().strip()
@@ -1156,6 +1287,7 @@ class FarmMarketGUI:
                     point,
                     market_point
                 )
+
                 markets_with_distance.append((market, distance))
 
             markets_with_distance.sort(
@@ -1164,15 +1296,22 @@ class FarmMarketGUI:
             )
 
             self.current_markets = [
-                market
-                for market, distance in markets_with_distance
+                market for market, distance in markets_with_distance
             ]
+
             self.current_distances = {
                 market.fmid: distance
                 for market, distance in markets_with_distance
             }
 
         self.show_page(1)
+
+        direction = (
+            "по убыванию" if reverse else "по возрастанию"
+        )
+        self.set_status(
+            f"Сортировка: {criterion}, {direction}"
+        )
 
     def build_details_text(self, market):
         """Возвращает подробную информацию о рынке в виде строки."""
@@ -1237,19 +1376,25 @@ class FarmMarketGUI:
         """Открывает окно с многострочным текстом."""
         window = tk.Toplevel(self.root)
         window.title(title)
-        window.geometry("700x600")
+        window.geometry("720x600")
+        window.transient(self.root)
+
+        frame = ttk.Frame(window)
+        frame.pack(fill="both", expand=True)
 
         text_widget = tk.Text(
-            window,
+            frame,
             wrap="word",
             padx=10,
             pady=10
         )
+
         scrollbar = ttk.Scrollbar(
-            window,
+            frame,
             orient="vertical",
             command=text_widget.yview
         )
+
         text_widget.configure(yscrollcommand=scrollbar.set)
 
         text_widget.pack(
@@ -1262,6 +1407,12 @@ class FarmMarketGUI:
         text_widget.insert("1.0", text)
         text_widget.configure(state="disabled")
 
+        ttk.Button(
+            window,
+            text="Закрыть",
+            command=window.destroy
+        ).pack(pady=8)
+
     def show_details(self):
         """Показывает подробную информацию о выбранном рынке."""
         market = self.get_selected_market()
@@ -1272,6 +1423,10 @@ class FarmMarketGUI:
         self.show_text_window(
             "Информация о рынке",
             self.build_details_text(market)
+        )
+
+        self.set_status(
+            f"Открыта информация о рынке FMID {market.fmid}"
         )
 
     def show_reviews(self):
@@ -1304,8 +1459,8 @@ class FarmMarketGUI:
         ]
 
         for review in reviews:
-            lines.append(f"Автор: {review['Name']}")
-            lines.append(f"Оценка: {review['Rating']} / 5")
+            lines.append(f"Автор: {review.get('Name', '')}")
+            lines.append(f"Оценка: {review.get('Rating', '')} / 5")
 
             if review.get("Review", "") != "":
                 lines.append("Отзыв:")
@@ -1318,8 +1473,12 @@ class FarmMarketGUI:
             "\n".join(lines)
         )
 
+        self.set_status(
+            f"Открыты отзывы рынка FMID {market.fmid}"
+        )
+
     def add_review(self):
-        """Открывает окно добавления отзыва."""
+        """Открывает окно добавления многострочного отзыва."""
         market = self.get_selected_market()
 
         if market is None:
@@ -1327,7 +1486,7 @@ class FarmMarketGUI:
 
         window = tk.Toplevel(self.root)
         window.title("Добавление отзыва")
-        window.geometry("520x420")
+        window.geometry("540x430")
         window.transient(self.root)
         window.grab_set()
 
@@ -1335,7 +1494,7 @@ class FarmMarketGUI:
             window,
             text=market.name,
             font=("Arial", 12, "bold"),
-            wraplength=470
+            wraplength=490
         ).pack(pady=(12, 8))
 
         form = ttk.Frame(window)
@@ -1344,12 +1503,16 @@ class FarmMarketGUI:
         ttk.Label(form, text="Имя и фамилия:").grid(
             row=0, column=0, sticky="w", pady=5
         )
+
         name_entry = ttk.Entry(form, width=40)
-        name_entry.grid(row=0, column=1, sticky="ew", pady=5)
+        name_entry.grid(
+            row=0, column=1, sticky="ew", pady=5
+        )
 
         ttk.Label(form, text="Оценка:").grid(
             row=1, column=0, sticky="w", pady=5
         )
+
         rating_combo = ttk.Combobox(
             form,
             state="readonly",
@@ -1357,18 +1520,32 @@ class FarmMarketGUI:
             width=8
         )
         rating_combo.current(4)
-        rating_combo.grid(row=1, column=1, sticky="w", pady=5)
+        rating_combo.grid(
+            row=1, column=1, sticky="w", pady=5
+        )
 
         form.columnconfigure(1, weight=1)
 
-        ttk.Label(window, text="Текст отзыва:").pack(
+        ttk.Label(
+            window,
+            text="Текст отзыва (можно оставить пустым):"
+        ).pack(
             anchor="w",
             padx=12,
             pady=(8, 3)
         )
 
-        review_text = tk.Text(window, height=10, wrap="word")
-        review_text.pack(fill="both", expand=True, padx=12, pady=(0, 8))
+        review_text = tk.Text(
+            window,
+            height=10,
+            wrap="word"
+        )
+        review_text.pack(
+            fill="both",
+            expand=True,
+            padx=12,
+            pady=(0, 8)
+        )
 
         def save():
             name = name_entry.get().strip()
@@ -1392,19 +1569,32 @@ class FarmMarketGUI:
             )
             self.review_manager.save_reviews()
 
-            messagebox.showinfo(
-                "Отзыв",
-                "Отзыв успешно сохранён!",
-                parent=window
-            )
             window.destroy()
             self.show_page(self.current_page)
 
+            messagebox.showinfo(
+                "Отзыв",
+                "Отзыв успешно сохранён!"
+            )
+
+            self.set_status(
+                f"Добавлен отзыв для рынка FMID {market.fmid}"
+            )
+
+        button_frame = ttk.Frame(window)
+        button_frame.pack(pady=(0, 12))
+
         ttk.Button(
-            window,
+            button_frame,
             text="Сохранить",
             command=save
-        ).pack(pady=(0, 12))
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="Отмена",
+            command=window.destroy
+        ).pack(side="left", padx=5)
 
     def delete_review(self):
         """Удаляет выбранный отзыв выбранного рынка."""
@@ -1426,7 +1616,7 @@ class FarmMarketGUI:
 
         window = tk.Toplevel(self.root)
         window.title("Удаление отзыва")
-        window.geometry("700x450")
+        window.geometry("720x460")
         window.transient(self.root)
         window.grab_set()
 
@@ -1434,22 +1624,37 @@ class FarmMarketGUI:
             window,
             text=f"Отзывы: {market.name}",
             font=("Arial", 12, "bold"),
-            wraplength=650
+            wraplength=670
         ).pack(pady=10)
 
-        listbox = tk.Listbox(window, height=14)
-        listbox.pack(fill="both", expand=True, padx=12, pady=6)
+        listbox = tk.Listbox(
+            window,
+            height=14,
+            exportselection=False
+        )
+        listbox.pack(
+            fill="both",
+            expand=True,
+            padx=12,
+            pady=6
+        )
 
         for number, review in enumerate(reviews, start=1):
-            review_text = review.get("Review", "").replace("\n", " ")
-            if len(review_text) > 60:
-                review_text = review_text[:57] + "..."
+            review_text_value = review.get(
+                "Review", ""
+            ).replace("\n", " ")
+
+            if len(review_text_value) > 65:
+                review_text_value = (
+                    review_text_value[:62] + "..."
+                )
 
             listbox.insert(
                 "end",
                 (
                     f"{number}. {review.get('Name', '')} | "
-                    f"{review.get('Rating', '')}/5 | {review_text}"
+                    f"{review.get('Rating', '')}/5 | "
+                    f"{review_text_value}"
                 )
             )
 
@@ -1480,16 +1685,30 @@ class FarmMarketGUI:
                 self.review_manager.save_reviews()
                 window.destroy()
                 self.show_page(self.current_page)
+
                 messagebox.showinfo(
                     "Удаление",
                     "Отзыв удалён!"
                 )
 
+                self.set_status(
+                    f"Удалён отзыв рынка FMID {market.fmid}"
+                )
+
+        button_frame = ttk.Frame(window)
+        button_frame.pack(pady=10)
+
         ttk.Button(
-            window,
+            button_frame,
             text="Удалить выбранный отзыв",
             command=remove
-        ).pack(pady=10)
+        ).pack(side="left", padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="Отмена",
+            command=window.destroy
+        ).pack(side="left", padx=5)
 
     def delete_market(self):
         """Удаляет выбранный рынок и все связанные отзывы."""
@@ -1536,6 +1755,7 @@ class FarmMarketGUI:
                 for item in self.current_markets
                 if item.fmid != market.fmid
             ]
+
             self.current_distances.pop(market.fmid, None)
 
             self.show_page(self.current_page)
@@ -1545,6 +1765,10 @@ class FarmMarketGUI:
                 "Рынок и связанные отзывы удалены!"
             )
 
+            self.set_status(
+                f"Удалён рынок FMID {market.fmid}"
+            )
+
 
 def run_gui():
     """Создает менеджеры и запускает GUI-приложение."""
@@ -1552,7 +1776,11 @@ def run_gui():
     review_manager = ReviewManager("reviews.csv")
 
     root = tk.Tk()
-    FarmMarketGUI(root, market_manager, review_manager)
+    FarmMarketGUI(
+        root,
+        market_manager,
+        review_manager
+    )
     root.mainloop()
 
 
