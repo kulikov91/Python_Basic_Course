@@ -1,0 +1,12 @@
+{
+    "player_name": "Player",
+    "board_size": 10,
+    "cell_size": 45,
+    "ship_count": 10,
+    "difficulty": "normal",
+    "water_color": "#bde0fe",
+    "hit_color": "#e63946",
+    "miss_color": "#eeeeee",
+    "ship_color": "#457b9d",
+    "font_size": 16
+}

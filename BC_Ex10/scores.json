@@ -1,0 +1,37 @@
+[
+    {
+        "name": "Player",
+        "result": "Победа",
+        "moves": 98,
+        "board_size": 10,
+        "difficulty": "easy"
+    },
+    {
+        "name": "Player",
+        "result": "Победа",
+        "moves": 96,
+        "board_size": 10,
+        "difficulty": "normal"
+    },
+    {
+        "name": "Player",
+        "result": "Поражение",
+        "moves": 85,
+        "board_size": 10,
+        "difficulty": "normal"
+    },
+    {
+        "name": "Player",
+        "result": "Победа",
+        "moves": 79,
+        "board_size": 10,
+        "difficulty": "normal"
+    },
+    {
+        "name": "Player",
+        "result": "Победа",
+        "moves": 78,
+        "board_size": 10,
+        "difficulty": "normal"
+    }
+]
